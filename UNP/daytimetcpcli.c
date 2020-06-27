@@ -29,8 +29,9 @@ int main(int argc, char **argv)
         err_sys("connect error");
 
     while ( (n = read(sockfd, recvline, MAXLINE)) > 0) {
-        recvline[n] = 0; 
+        recvline[n] = '\0'; /* 如果为0则会导致fputs接受不到EOF的标志，此处应该改为'\0'才能正确表示字符串的结束*/
         if (fputs(recvline, stdout) == EOF)
+        //if (write(STDOUT_FILENO, recvline, n) > 0)
             err_sys("fput error");
     }
 

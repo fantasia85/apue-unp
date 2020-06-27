@@ -35,6 +35,8 @@
 
 #define LISTENQ 1024 /* 2nd argument to listen() */
 
+#define SERV_PORT 9877 /* TCP and UDP */
+#define SERV_PORT_STR 9877 /* TCP and UDP */
 
 /*
  * Default file access poermissions for new files.
