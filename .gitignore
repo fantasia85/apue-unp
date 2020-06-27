@@ -30,3 +30,8 @@
 *.exe
 *.out
 *.app
+APUE/apue_fctl
+APUE/file_rw
+APUE/temp.foo
+UNP/daytimetcpcli
+UNP/daytimetcpsrv
