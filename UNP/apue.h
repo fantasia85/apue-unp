@@ -132,4 +132,8 @@ void TELL_CHILD(pid_t);
 void WAIT_PARENT(void);
 void WAIT_CHILD(void);
 
+typedef void Sigfunc(int); /* for convenience. void (*signal(int signo, void (*func) (int)))(int); */
+
+Sigfunc * signal(int signo, Sigfunc *func); /* for signal */
+
 #endif
