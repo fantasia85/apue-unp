@@ -136,4 +136,9 @@ typedef void Sigfunc(int); /* for convenience. void (*signal(int signo, void (*f
 
 Sigfunc * signal(int signo, Sigfunc *func); /* for signal */
 
+#include <time.h>
+#include <sys/time.h>
+
+char * gf_time(void);
+
 #endif
