@@ -58,9 +58,10 @@ void str_cli(FILE *fp, int sockfd)
             else if (n == 0) {
                 fprintf (stderr, "%s: EOF on stdin\n", gf_time());
                 stdineof = 1; /* all done with stdin */
-                if (tooptr == toiptr)
+                if (tooptr == toiptr) {
                     if (shutdown(sockfd, SHUT_WR) < 0)
                         err_sys("shutdown error");  /* send FIN */
+                }
             }
             else {
                 fprintf(stderr, "%s: read %d bytes from stdin\n", gf_time(), n);
@@ -86,36 +87,37 @@ void str_cli(FILE *fp, int sockfd)
                 friptr += n; /* just read */
                 FD_SET(STDOUT_FILENO, &wset); /* try and write blow */
             }
+        }
             
-            if (FD_ISSET(STDOUT_FILENO, &wset) && ( (n = friptr - froptr) > 0)) {
-                if ( (nwritten = write(STDOUT_FILENO, froptr, n)) < 0) {
-                    if (errno != EWOULDBLOCK)
-                        err_sys("write error to stdout");
-                }
-                else {
-                    fprintf (stderr, "%s: wrote %d bytes to stdout\n", gf_time(), nwritten);
-                    froptr += nwritten; /* just written */
-                    if (froptr == friptr)
-                        froptr = friptr = fr; /* back to beginning of buffer */
-                }
+        if (FD_ISSET(STDOUT_FILENO, &wset) && ( (n = friptr - froptr) > 0)) {
+            if ( (nwritten = write(STDOUT_FILENO, froptr, n)) < 0) {
+                if (errno != EWOULDBLOCK)
+                    err_sys("write error to stdout");
             }
+            else {
+                fprintf (stderr, "%s: wrote %d bytes to stdout\n", gf_time(), nwritten);
+                froptr += nwritten; /* just written */
+                if (froptr == friptr)
+                    froptr = friptr = fr; /* back to beginning of buffer */
+            }
+        }
 
-            if (FD_ISSET(sockfd, &wset) && ((n = toiptr - tooptr) > 0)) {
-                if ( (nwritten = write(sockfd, tooptr, n)) < 0) {
-                    if (errno != EWOULDBLOCK)
-                        err_sys("write error to socket");
-                }
-                else {
-                    fprintf(stderr, "%s: wrote %d bytes to socket\n", gf_time(), nwritten);
-                    tooptr += nwritten; /* just written */
-                    if (tooptr == toiptr) {
-                        toiptr = tooptr = to; /* back to beginning of buffer */
-                        if (stdineof)
-                            if (shutdown(sockfd, SHUT_WR) < 0)
-                                err_sys("shutdown error"); /* send FIN */
+        if (FD_ISSET(sockfd, &wset) && ((n = toiptr - tooptr) > 0)) {
+            if ( (nwritten = write(sockfd, tooptr, n)) < 0) {
+                if (errno != EWOULDBLOCK)
+                    err_sys("write error to socket");
+            }
+            else {
+                fprintf(stderr, "%s: wrote %d bytes to socket\n", gf_time(), nwritten);
+                tooptr += nwritten; /* just written */
+                if (tooptr == toiptr) {
+                    toiptr = tooptr = to; /* back to beginning of buffer */
+                    if (stdineof) {
+                        if (shutdown(sockfd, SHUT_WR) < 0)
+                            err_sys("shutdown error"); /* send FIN */
                     }
                 }
             }
         }
-    }  
+    }
 }
