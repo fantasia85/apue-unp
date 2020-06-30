@@ -40,12 +40,7 @@ UNP/tcpcli1
 UNP/tcpsrv1
 UNP/tcpcli11
 UNP/tcpcli12
-UNP/tcpsrv2
-
 UNP/tcpsrv3
 UNP/tcpsrv4
 UNP/tcpcli13
-UNP/tcplog
-UNP/tcplog
-UNP/tcplog
-UNP/tcplog
+UNP/errlog
