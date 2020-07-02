@@ -15,7 +15,7 @@ struct file {
 
 #define F_CONNECTING 1 /* connect() in process */
 #define F_READING  2 /* connect() complete; now reading  */
-#define F_NONE 4 /* all done */
+#define F_DONE 4 /* all done */
 
 #define GET_CMD "GET %s HTTP/1.0\r\n\r\n"
 
