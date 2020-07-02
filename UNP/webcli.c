@@ -3,6 +3,8 @@
 #include "apue.h"
 #include "webcli.h"
 #include <sys/socket.h>
+#include <fcntl.h>
+#include <errno.h>
 
 int main(int argc, char **argv)
 {
@@ -83,4 +85,57 @@ void home_page (const char *host, const char *fname)
     printf ("end-of-file on home page\n");
     if (close(fd) < 0)
         err_sys("close error");
+}
+
+/* 发起非阻塞connect */
+void start_connect (struct file *fptr)
+{
+    int fd, flags, n;
+    struct addrinfo *ai;
+
+    if ((ai = host_serv(fptr->f_host, SERV, 0, SOCK_STREAM)) == NULL)
+        err_sys("host_serv error");
+
+    if ((fd = socket(ai->ai_family, ai->ai_socktype, ai->ai_protocol)) < 0)
+        err_sys("socket error");
+    fptr->f_fd = fd;
+    printf("start_connect for %s, fd %d\n", fptr->f_name, fd);
+
+    /* set socket nonblocking */
+    if ((flags = fcntl(fd, F_GETFL, 0)) < 0)
+        err_sys("fcntl get error");
+    if (fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0)
+        err_sys("fcntl set error");
+
+    /* Initiate nonblocking connect to the server. */
+    if ((n = connect(fd, ai->ai_addr, ai->ai_addrlen)) < 0) {
+        if (errno != EINPROGRESS)
+            err_sys("nonblocking  connect error");
+        fptr->f_flags = F_CONNECTING;
+        FD_SET(fd, &rset); /* select for reading and writing  */
+        FD_SET(fd, &wset);
+        if (fd > maxfd)
+            maxfd = fd;
+    }
+    else if (n >= 0) {  /* connect is already done */
+        write_get_cmd(fptr);  /* write() the GET command */
+    }
+}
+
+/* 发送一个HTTP GET命令到服务器 */
+void write_get_cmd(struct file *fptr)
+{
+    int n, nwritten;
+    char line[MAXLINE];
+
+    n = snprintf(line, sizeof(line), GET_CMD, fptr->f_name);
+    if ((nwritten = writen(fptr->f_fd, line, n)) < 0)
+        err_sys("writen error");
+    printf("wrote %d bytes for %s\n", n, fptr->f_name);
+
+    fptr->f_flags = F_READING; /* clears F_CONNECTING */
+
+    FD_SET(fptr->f_fd, &rset); /* will read server's reply */
+    if (fptr->f_fd > maxfd)
+        maxfd = fptr->f_fd;
 }
