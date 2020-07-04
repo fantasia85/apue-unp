@@ -73,6 +73,9 @@ void daemonize(const char *);
 void sleep_us(unsigned int);
 ssize_t readn(int, void *, size_t);
 ssize_t writen(int, const void *, size_t);
+
+/* 使用线程特定数据的readline函数 */
+#include <pthread.h>
 ssize_t readline(int, void *, size_t);
 
 int fd_pipe(int *);
