@@ -2,6 +2,7 @@
 
 //Web客户程序，把它重新编写成用线程代替非阻塞connect
 
+
 /*
 #include "tcpfunc.h"
 #include <thread.h> // Solaris threads
