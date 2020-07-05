@@ -53,3 +53,4 @@ UNP/tcpsrv6
 UNP/mutex_example
 UNP/webcli02
 UNP/unp_client
+UNP/unp_server01

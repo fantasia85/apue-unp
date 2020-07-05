@@ -497,7 +497,7 @@ static ssize_t my_read (Rline *tsd, int fd, char *ptr)
     return 1;
 }
 
-ssize_t readdline(int fd, void *vptr, size_t maxlen)
+ssize_t readline(int fd, void *vptr, size_t maxlen)
 {
     size_t n, rc;
     char c, *ptr;
