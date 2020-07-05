@@ -3,6 +3,7 @@
 
 #include "tcpfunc.h"
 #include <errno.h>
+#include <sys/wait.h>
 
 typedef struct {
     pid_t child_pid; /* process ID */
@@ -107,8 +108,10 @@ void sig_int(int signo)
     void pr_cpu_time(void);
 
     /* terminate all children */
-    for (i = 0; i < nchildren; i++)
+    for (i = 0; i < nchildren; i++) {
         kill(cptr[i].child_pid, SIGTERM);
+        printf ("child %d send %d times\n", cptr[i].child_pid, cptr[i].child_count);
+    }
     while (wait(NULL) > 0)
         ;  /* wait for all children */
     if (errno != ECHILD)
@@ -166,7 +169,7 @@ pid_t child_make(int i, int listenfd, int addrlen)
         err_sys("close error");
     if (close(listenfd) < 0)
         err_sys("close error"); /* child does not need this open */
-    child_main(i, listen, addrlen); /* never returns */
+    child_main(i, listenfd, addrlen); /* never returns */
 }
 
 void child_main(int i, int listenfd, int addrlen)
@@ -220,13 +223,74 @@ void web_child(int sockfd)
     }
 }
 
-
+/* read_fd函数，调用recvmsg在一个Unix域套接字上接受数据和描述符 */
 ssize_t read_fd(int fd, void *ptr, size_t nbytes, int *recvfd)
 {
+    struct msghdr msg;
+    struct iovec iov[1];
+    ssize_t n;
 
+    union {
+        struct cmsghdr cm;
+        char control[CMSG_SPACE(sizeof(int))];
+    } control_un;
+    struct cmsghdr *cmptr;
+
+    msg.msg_control = control_un.control;
+    msg.msg_controllen = sizeof(control_un.control);
+
+    msg.msg_name = NULL;
+    msg.msg_namelen = 0;
+
+    iov[0].iov_base = ptr;
+    iov[0].iov_len = nbytes;
+    msg.msg_iov = iov;
+    msg.msg_iovlen = 1;
+
+    if ((n = recvmsg(fd, &msg, 0)) <= 0)
+        return n;
+
+    if ((cmptr = CMSG_FIRSTHDR(&msg)) != NULL && cmptr->cmsg_len == CMSG_LEN(sizeof(int))) {
+        if (cmptr->cmsg_level != SOL_SOCKET)
+            err_quit("control level != SOL_SOCKET");
+        if (cmptr->cmsg_type != SCM_RIGHTS)
+            err_quit("control type != SCM_RIGHTS");
+        *recvfd = *((int *) CMSG_DATA(cmptr));
+    }
+    else
+        *recvfd = -1; /* descriptor was not passed */
+    
+    return n;
 }
 
+
+/* write_fd函数，调用sendmsg跨一个Unix域套接字发送一个描述符 */
 ssize_t write_fd (int fd, void *ptr, size_t nbytes, int sendfd)
 {
+    struct msghdr msg;
+    struct iovec iov[1];
 
+    union {
+        struct cmsghdr cm;
+        char control[CMSG_SPACE(sizeof(int))];
+    }control_un;
+    struct cmsghdr *cmptr;
+
+    msg.msg_control = control_un.control;
+    msg.msg_controllen = sizeof(control_un.control);
+    cmptr = CMSG_FIRSTHDR(&msg);
+    cmptr->cmsg_len = CMSG_LEN(sizeof(int));
+    cmptr->cmsg_level = SOL_SOCKET;
+    cmptr->cmsg_type = SCM_RIGHTS;
+    *((int *) CMSG_DATA(cmptr)) = sendfd;
+
+    msg.msg_name = NULL;
+    msg.msg_namelen = 0;
+
+    iov[0].iov_base = ptr;
+    iov[0].iov_len = nbytes;
+    msg.msg_iov = iov;
+    msg.msg_iovlen = 1;
+
+    return sendmsg(fd, &msg, 0);
 }
