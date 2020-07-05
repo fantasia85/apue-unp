@@ -109,10 +109,10 @@ void child_main(int i, int listenfd, int addrlen)
 
     for ( ; ; ) {
         clilen = addrlen;
-        my_lock_wait(); /* 对文件上锁 */
+        my_lock_wait(); /* 对线程互斥量上锁 */
         if ((connfd = accept(listenfd, cliaddr, &clilen)) < 0)
             err_sys("accept error");
-        my_lock_release(); /* 对文件解锁 */
+        my_lock_release(); /* 对线程互斥量解锁 */
 
         web_child(connfd); /* process the request */
         if (close(connfd) < 0)
